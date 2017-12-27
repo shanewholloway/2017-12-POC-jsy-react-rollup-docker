@@ -1,0 +1,33 @@
+{
+  "private": true,
+  "dkrenv": {
+    "svc": "test-live-web",
+    "img": "127.0.0.1:5003/poc/test-live-web",
+    "service": {
+      "publish": "8080:3000",
+      "update-monitor": "1ms",
+      "stop-grace-period": "1ms"
+    }
+  },
+  "dkrenv:alpine": {
+    "svc": "test-alpine-live-web",
+    "img": "127.0.0.1:5003/poc/test-alpine-live-web",
+    "dockerfile": "./Dockerfile.alpine"
+  },
+  "scripts": {
+    ":dkrenv": "bash ./dkrenv.sh",
+    "start": "bash ./dkrenv.sh start",
+    "stop": "bash ./dkrenv.sh stop",
+    "logs": "bash ./dkrenv.sh logs",
+    "exec": "bash ./dkrenv.sh exec",
+    "build": "bash ./dkrenv.sh build",
+    "watch": "bash ./dkrenv.sh watch",
+    "clean": "bash ./dkrenv.sh clean",
+    "dkr-registry-init": "docker service create --name POC_local_swarm_registry --publish 5003:5000 --detach=false registry:latest || true",
+    "dkr-registry-rm": "docker service rm POC_local_swarm_registry || true",
+    "env": "env"
+  },
+  "devDependencies": {
+    "nodemon": "^1.12.5"
+  }
+}

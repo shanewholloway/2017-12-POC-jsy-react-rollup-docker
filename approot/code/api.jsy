@@ -1,0 +1,22 @@
+import * as path from 'path'
+import express from 'express'
+import expressStaticGzip from 'express-static-gzip'
+
+import {initExpressLiveLoader} from 'jsy-rollup-bundler/dist/live-server.mjs'
+
+const webroot = path.join @ __dirname, 'public'
+const api = express()
+initExpressLiveLoader @ api, webroot, @{}
+  usePolling: true
+
+api.set @ 'views', `${__dirname}/views`
+api.get @ '/', (req, res) => res.render('index')
+api.get @ '/index.html', (req, res) => res.render('index')
+
+api.use @ '/'
+  expressStaticGzip @
+    webroot
+    @{} maxAge: '4 hr'
+
+export default api
+

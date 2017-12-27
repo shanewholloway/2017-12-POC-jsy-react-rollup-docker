@@ -1,0 +1,31 @@
+import builtins from 'builtins'
+import pkg from './package.json'
+
+const dependencies = Object.keys @ pkg.dependencies
+
+export default @{}
+  jsy: @[]
+    './code/index.jsy'
+
+  files: @[]
+    @{} from: './code/views'
+        to: './dist/views/'
+
+  opt: @{}
+    common: @{}
+      outdir: './dist'
+      format: 'cjs'
+      suffix: ''
+      externals: @[]
+        ... builtins()
+        ... dependencies
+        'express'
+        'express-static-gzip'
+        'chokidar'
+
+    development: @{}
+      production: false, sourcemap: true
+
+    production: @{}
+      production: true, sourcemap: true
+

@@ -1,0 +1,34 @@
+/* BEGIN DEV ONLY */
+import connectReload from 'jsy-rollup-bundler/dist/react-live-loader.mjs'
+connectReload()
+/* END DEV ONLY */
+
+import React from 'react'
+import ReactDOM from 'react-dom'
+import {FelaStyle, felaComponent} from './cfg/style'
+import SUI_Progress from 'semantic-ui-react/dist/es/modules/Progress'
+import theme from './cfg/theme'
+
+const Heading = felaComponent @ 'h1', props => @:
+  color: props.theme.color
+  fontSize: '20px'
+
+const Progress = felaComponent @ SUI_Progress, props => @:
+  backgroundColor: 'orange'
+
+function DummyComponent() ::
+  return @
+    <div>
+      <Heading>Welcome to React with JSY and Docker Services</Heading>
+      <Progress percent={60} active>Active</Progress>
+    </div>
+
+::
+  const root = @
+    <FelaStyle theme={theme}>
+      <DummyComponent />
+    </FelaStyle>
+
+  const el = document.querySelector('main')
+  ReactDOM.render @ root, el
+

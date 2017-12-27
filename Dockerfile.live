@@ -1,0 +1,10 @@
+ARG DKRENV_IMG
+FROM ${DKRENV_IMG}:devel as watcher
+
+FROM ${DKRENV_IMG}:latest
+CMD npm -s run start:dev
+COPY --from=watcher /usr/src/app/ /usr/src/app/
+COPY ./approot/deps /usr/src/app/deps/
+COPY ./approot/dist /usr/src/app/dist/
+
+# vim: ft=dockerfile

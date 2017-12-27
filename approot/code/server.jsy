@@ -1,0 +1,14 @@
+import http from 'http'
+import api from './api'
+
+export async function main() ::
+  http.createServer @ api
+  .listen @ 3000, function() ::
+    const {port} = this.address()
+    const url = `http://127.0.0.1:${port}`
+
+    console.log @
+    console.log @ `READY!`
+    console.log @ `  ${url}`
+    console.log @
+

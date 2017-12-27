@@ -1,0 +1,9 @@
+ARG DKRENV_IMG
+FROM ${DKRENV_IMG}:build
+COPY ./approot/deps/ /usr/src/app/deps/
+RUN cp ./deps/package.json ./dist/ \
+ && cd ./dist \
+ && npm install . \
+ && npm dedupe
+
+# vim: ft=dockerfile

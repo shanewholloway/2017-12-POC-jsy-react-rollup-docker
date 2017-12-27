@@ -1,0 +1,46 @@
+import React from 'react'
+import { createRenderer } from 'fela'
+import { connect, createComponentWithProxy, Provider, ThemeProvider } from 'react-fela'
+
+import fpi_extend from 'fela-plugin-extend'
+import fpi_prefixer from 'fela-plugin-prefixer'
+import fpi_fallback from 'fela-plugin-fallback-value'
+import fpi_namedkeys from 'fela-plugin-named-keys'
+import fpi_lvha from 'fela-plugin-lvha'
+
+const fela_renderer = createRenderer @:
+  plugins: @[]
+    fpi_extend()
+
+    fpi_namedkeys @:
+      // see [@media docs](https://developer.mozilla.org/en-US/docs/Web/CSS/@media)
+      desktop: '@media (min-width: 1024px)' 
+      tablet: '@media (min-width: 768px)'
+      // see [@supports docs](https://developer.mozilla.org/en-US/docs/Web/CSS/@supports)
+      supports_grid: '@supports (display: grid)'
+
+    fpi_prefixer()
+
+    fpi_fallback()
+
+    fpi_lvha()
+    
+
+
+export default FelaStyle
+export function FelaStyle({theme, children}) ::
+  return @
+    <Provider renderer={fela_renderer}>
+      <ThemeProvider theme={theme || {}}>
+        {children}
+      </ThemeProvider>
+    </Provider>
+
+export function felaComponent(Type, rule, passThroughProps) ::
+  if 'string' === typeof Type ::
+    return createComponentWithProxy @ rule, Type, passThroughProps
+
+  const fc = props => @ <Type {... props} />
+  return createComponentWithProxy @ rule, fc, passThroughProps
+
+export const felaConnect = connect

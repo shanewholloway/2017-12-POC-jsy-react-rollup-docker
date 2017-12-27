@@ -1,0 +1,193 @@
+import * as fs_extra from 'fs-extra'
+import {parse as path_parse} from 'path'
+import {minify} from 'uglify-es'
+import {bundle, jsy_plugin, buildAll, watchAndBuild} from 'jsy-rollup-bundler'
+
+import app_cfg from './rollup.app.jsy'
+import svr_cfg from './rollup.svr.jsy'
+
+const config_files = @[]
+  './package.json'
+  './package-lock.json'
+  './yarn.lock'
+  './rollup.cfg.jsy'
+  './rollup.app.jsy'
+  './rollup.svr.jsy'
+
+const rpi = @{}
+  resolve: require @ 'rollup-plugin-node-resolve'
+  commonjs: require @ 'rollup-plugin-commonjs'
+
+  virtual_alias: require @ 'rollup-plugin-virtual-alias'
+  replace: require @ 'rollup-plugin-replace'
+  stripcode: require @ 'rollup-plugin-strip-code'
+
+  uglify: require @ 'rollup-plugin-uglify'
+  hash_n_gzip: require @ 'rollup-plugin-hash-n-gzip'
+
+
+async function main(argv=process.argv) ::
+  if argv.includes @ '--watch' ::
+    return watchAndBuild.forever @
+      `npx babel-node ${__filename} --watch-impl`
+
+  try ::
+    var allBundlers = @{}
+      svr: await initBundlers @ svr_cfg
+      app: await initBundlers @ app_cfg
+
+
+    if argv.includes @ '--watch-impl' ::
+      setInterval @ show_memory, 20000
+      await _do_watch()
+    else ::
+      let tid = setInterval @ show_memory, 1000
+      await _do_build()
+      tid = clearInterval @ tid
+
+    show_memory()
+  catch err ::
+    console.error @ err
+    process.exit(1)
+
+
+  function show_memory() ::
+    let out = []
+
+    const mem = process.memoryUsage()
+    out.push @ 'MEM'
+    for const [k,v] of Object.entries(mem) ::
+      out.push @ `${k}: ${(v / 1.0e6).toFixed(1)} MB`
+
+    const cpu = process.cpuUsage()
+    out.push @ '   CPU'
+    for const [k,v] of Object.entries(cpu) ::
+      out.push @ `${k}: ${(v / 1.0e6).toFixed(2)}s`
+    out.push @ `up ${process.uptime()}s`
+
+    console.log @ '### %s', out.join(' ')
+
+  async function _do_build() ::
+    for const [key, bundler] of Object.entries @ allBundlers ::
+      if ! bundler :: continue
+      await buildAll @ bundler.full
+
+  async function _do_watch() ::
+    const w = watchAndBuild(on_restart)
+    w.restartOn @ config_files
+
+    for const [key, bundler] of Object.entries @ allBundlers ::
+      if ! bundler :: continue
+      for const ea of bundler.once ::
+        w.buildOnce @ ea, ea.watch
+      for const ea of bundler.rebuild ::
+        w.rebuildOn @ ea, ea.watch
+
+
+async function initBundlers(bndl_cfg) ::
+  const opt = {}
+  Object.assign @ opt, bndl_cfg.opt.common,
+    'production' === process.env.NODE_ENV
+      ? bndl_cfg.opt.production
+      : bndl_cfg.opt.development
+
+  let once = [], rebuild = []
+
+  await fs_extra.ensureDir @ opt.outdir
+
+  if bndl_cfg.vendor ::
+    once = once.concat @ bndl_cfg.vendor.map @ entry => ::
+      let {source, watch, opt:eopt} = entry
+      if 'string' === typeof entry ::
+        source = entry
+
+      const ans = bundle_vendor @ opt_clone(opt, source, eopt), source
+      ans.watch = watch || source
+      return ans
+      
+  if bndl_cfg.jsy ::
+    rebuild = rebuild.concat @ bndl_cfg.jsy.map @ entry => ::
+      let {source, watch, opt:eopt} = entry
+      if 'string' === typeof entry ::
+        source = entry
+
+      const ans = bundle_jsy @ opt_clone(opt, source, eopt), source
+      ans.watch = watch || source
+      return ans
+
+  if bndl_cfg.files ::
+    rebuild = rebuild.concat @ bndl_cfg.files.map @
+      ({from, to, watch}) =>
+        Object.assign @
+          bundle_files @ from, to
+          @{} watch: undefined === watch ? from : watch || null
+
+  const full = [].concat @ once, ...rebuild
+  return @{} once, rebuild, full
+
+function opt_clone(opt, source, ...extra) ::
+  opt = Object.create @ opt, @{}
+    source: @{} value: path_parse(source)
+  return Object.assign @ opt, ...extra
+
+
+
+function bundle_vendor(opt, source) ::
+  opt = Object.create @ opt
+  opt.globalModules = opt.vendorGlobalModules
+  opt.externals = opt.vendorExternals
+  return bundle_plugins @ opt, source, @[]
+
+function bundle_jsy(opt, source) ::
+  return bundle_plugins @ opt, source, @[]
+    jsy_plugin @:
+      plugins: @[] 'external-helpers'
+      presets: @[] 'react'
+
+function bundle_files(from, to) ::
+  return async () => ::
+    await fs_extra.copy @ from, to
+      @{} preserveTimestamps: true
+
+
+function bundle_plugins(opt={}, source, plugins) ::
+  const all_plugins = @[]
+    opt.aliasModules &&
+      rpi.virtual_alias @ opt.aliasModules
+
+    rpi.replace @:
+      'process.env.NODE_ENV': JSON.stringify @
+        opt.production ? 'production' : 'development'
+
+    rpi.stripcode @:
+      start_comment: `BEGIN ${opt.production ? 'DEV' : 'PROD'} ONLY`
+      end_comment: `END ${opt.production ? 'DEV' : 'PROD'} ONLY`
+
+    rpi.resolve @:
+      module: true, jsnext: true, browser: false, main: false
+      extensions: @[] '.js', '.jsy'
+
+    rpi.resolve @: browser: true, main: true
+
+    rpi.commonjs @:
+      include: 'node_modules/**'
+
+    ... plugins
+
+    opt.uglify &&
+      rpi.uglify @ opt.uglify, minify
+
+    opt.gzip &&
+      rpi.hash_n_gzip()
+
+  return bundle @: opt, source
+    globalModules: opt.globalModules
+    plugins: all_plugins.filter @ e=>e
+
+
+function on_restart(path) ::
+  // ensure the process exits
+  setTimeout @ () => process.exit(0), 300
+
+if module === require.main :: main()
+

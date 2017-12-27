@@ -1,0 +1,35 @@
+const globals_from_vendor = @{}
+  'react': 'window.React'
+  'react-dom': 'window.ReactDOM'
+
+export default @{}
+  vendor: @[]
+    './app/vendor.js'
+
+  jsy: @[]
+    './app/main.jsy'
+    './app/simple.jsy'
+
+  files: @[]
+    @{} from: './node_modules/semantic-ui-css-latolatin/dist'
+        to: './dist/public/css/'
+        watch: false
+
+  opt: @{}
+    common: @{}
+      format: 'iife'
+      gzip: true
+      outdir: './dist/public'
+      vendorGlobalModules: @{}
+      globalModules: globals_from_vendor
+
+    development: @{}
+      production: false, sourcemap: true
+
+    production: @{}
+      production: true, sourcemap: false
+      uglify: @{} 
+        compress: @{} warnings: false
+        output: @{} comments: false
+        sourceMap: false
+

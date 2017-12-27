@@ -1,0 +1,3 @@
+const v = 227
+console.log @ v
+
