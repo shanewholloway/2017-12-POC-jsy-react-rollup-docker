@@ -1,7 +1,7 @@
 import * as fs_extra from 'fs-extra'
 import {parse as path_parse} from 'path'
 import {minify} from 'uglify-es'
-import {bundle, jsy_plugin, buildAll, watchAndBuild} from 'jsy-rollup-bundler'
+import {bundle, buildAll, watchAndBuild} from 'jsy-rollup-bundler'
 
 import app_cfg from './rollup.app.jsy'
 import svr_cfg from './rollup.svr.jsy'
@@ -15,6 +15,8 @@ const config_files = @[]
   './rollup.svr.jsy'
 
 const rpi = @{}
+  jsy: require @ 'rollup-plugin-jsy-babel'
+
   resolve: require @ 'rollup-plugin-node-resolve'
   commonjs: require @ 'rollup-plugin-commonjs'
 
@@ -140,7 +142,7 @@ function bundle_vendor(opt, source) ::
 
 function bundle_jsy(opt, source) ::
   return bundle_plugins @ opt, source, @[]
-    jsy_plugin @:
+    rpi.jsy @:
       plugins: @[] 'external-helpers'
       presets: @[] 'react'
 

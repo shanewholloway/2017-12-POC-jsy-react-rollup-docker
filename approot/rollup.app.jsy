@@ -24,7 +24,7 @@ export default @{}
       globalModules: globals_from_vendor
 
     development: @{}
-      production: false, sourcemap: true
+      production: false, sourcemap: 'inline'
 
     production: @{}
       production: true, sourcemap: false

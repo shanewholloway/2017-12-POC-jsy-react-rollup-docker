@@ -24,8 +24,8 @@ export default @{}
         'chokidar'
 
     development: @{}
-      production: false, sourcemap: true
+      production: false, sourcemap: 'inline'
 
     production: @{}
-      production: true, sourcemap: true
+      production: true, sourcemap: 'inline'
 
